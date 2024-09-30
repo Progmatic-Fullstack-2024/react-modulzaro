@@ -1,35 +1,65 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect } from "react";
+import { useState } from "react";
+import { getQuestions } from "./services/quizService";
+import { randomizeQuestions } from "./services/randomizeQuestions";
+import QuestionCard from "./components/QuestionCard";
+import QuizResult from "./components/QuizResult";
 
-function App() {
-  const [count, setCount] = useState(0)
+const TOTALQUESTIONS = 10;
+
+export default function App() {
+  const [questions, setQuestions] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [score, setScore] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    async function fetchQuestions() {
+      const fetchedQuestions = await getQuestions();
+      setQuestions(randomizeQuestions(fetchedQuestions));
+    }
+    fetchQuestions();
+  }, []);
+
+  const handleAnswer = (isCorrect) => {
+    if (isCorrect) {
+      setScore(score + 1);
+    }
+    if (currentQuestion + 1 < TOTALQUESTIONS) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      setIsCompleted(true);
+    }
+  };
+
+  const handleReset = () => {
+    setCurrentQuestion(0);
+    setIsCompleted(false);
+    setScore(0);
+    setQuestions(randomizeQuestions(questions));
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="min-h-screen flex flex-col items-center">
+      <h1 className="text-3xl font-semibold my-4">My Quiz App</h1>
+      <div className="w-full">
+        {isCompleted ? (
+          <QuizResult
+            score={score}
+            total={TOTALQUESTIONS}
+            reset={handleReset}
+          />
+        ) : (
+          questions.length && (
+            <QuestionCard
+              currentQuestion={currentQuestion}
+              total={TOTALQUESTIONS}
+              question={questions[currentQuestion]}
+              handleAnswer={handleAnswer}
+            />
+          )
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
-
-export default App
